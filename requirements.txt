@@ -1,0 +1,27 @@
+# LangGraph and LLM
+langgraph>=0.1.0
+langchain>=0.2.0
+langchain-openai>=0.1.0
+openai>=1.0.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+rapidfuzz>=3.0.0
+python-dateutil>=2.8.0
+
+# Reports
+openpyxl>=3.1.0
+xlsxwriter>=3.1.0
+
+# Telegram
+python-telegram-bot>=20.0
+
+# Web UI
+streamlit>=1.30.0
+
+# Utilities
+python-dotenv>=1.0.0
+rich>=13.0.0
+click>=8.1.0
+loguru>=0.7.0
