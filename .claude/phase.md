@@ -181,22 +181,23 @@ Set up everything before any agent logic is written. This phase is about structu
 
 ## Phase 8 — Telegram Bot Interface
 **Target:** Week 3 to 4
+**Status: DONE**
 
 ### Tasks
-- [ ] Write `bot.py` as the entry point
-- [ ] Implement commands: `/start`, `/reconcile`, `/status`, `/history`, `/report [id]`, `/help`
-- [ ] Handle `/reconcile` flow:
+- [x] Write `bot.py` as the entry point
+- [x] Implement commands: `/start`, `/reconcile`, `/status`, `/history`, `/report [id]`, `/help`
+- [x] Handle `/reconcile` flow:
   - Prompt for bank statement CSV upload
   - Accept file, save to `data/uploads/`
   - Prompt for ledger CSV upload
   - Accept file, save to `data/uploads/`
-  - Run LangGraph pipeline
+  - Run LangGraph pipeline (in executor to avoid blocking event loop)
   - Send progress updates per agent (1/5, 2/5, etc.)
   - Send final summary message with match rate and exception count
   - Send Excel report file
-- [ ] Implement `/history` — query `recon_sessions` table, return last 5 sessions as a message
-- [ ] Implement `/report [id]` — fetch report file from `data/reports/` and send as document
-- [ ] Add error messages for bad file uploads (wrong format, empty file)
+- [x] Implement `/history` — query `recon_sessions` table, return last 5 sessions as a message
+- [x] Implement `/report [id]` — fetch report file from `data/reports/` and send as document
+- [x] Add error messages for bad file uploads (wrong format, empty file)
 
 ### Done when
 - Full Telegram flow works from `/reconcile` to report delivery

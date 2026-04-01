@@ -110,6 +110,85 @@ def get_exceptions_for_session(session_id):
     return [dict(row) for row in rows]
 
 
+# Bulk insert helpers used by report_writer_agent
+
+def insert_session(session_id, period_start, period_end, bank_file, ledger_file,
+                   status, total_bank, total_ledger, matched_count, exception_count,
+                   report_path, summary):
+    # Updates an existing session row with the final results from the pipeline.
+    # The session row is created at the start of the run via create_session().
+    update_session(
+        session_id,
+        period_start=period_start,
+        period_end=period_end,
+        bank_file=bank_file,
+        ledger_file=ledger_file,
+        status=status,
+        total_bank=total_bank,
+        total_ledger=total_ledger,
+        matched_count=matched_count,
+        exception_count=exception_count,
+        report_path=report_path,
+        summary=summary,
+    )
+
+
+def insert_matches(session_id, matches: list):
+    # Inserts all match records for a session in a single transaction.
+    if not matches:
+        return
+    conn = get_connection()
+    conn.executemany(
+        """
+        INSERT INTO matches (session_id, bank_txn_id, ledger_entry_id, match_type, confidence, reasoning)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                session_id,
+                m["bank_txn_id"],
+                m["ledger_entry_id"],
+                m["match_type"],
+                m["confidence"],
+                m["reasoning"],
+            )
+            for m in matches
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+
+def insert_exceptions(session_id, exceptions: list):
+    # Inserts all exception records for a session in a single transaction.
+    if not exceptions:
+        return
+    conn = get_connection()
+    conn.executemany(
+        """
+        INSERT INTO exceptions (session_id, exception_type, item_id, item_source, amount,
+                                description, investigation, resolution, severity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                session_id,
+                e["type"],
+                e["item_id"],
+                e["item_source"],
+                e["amount"],
+                e["description"],
+                e.get("investigation"),
+                e.get("resolution"),
+                e.get("severity"),
+            )
+            for e in exceptions
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+
 # audit_log
 
 def log_audit(session_id, agent, action, details=""):

@@ -11,11 +11,11 @@
 | 5 | Agent 4: Exception Investigator | Done |
 | 6 | Agent 5: Report Writer | Done |
 | 7 | LangGraph Pipeline Wiring | Done |
-| 8 | Telegram Bot Interface | Not started |
+| 8 | Telegram Bot Interface | Done |
 | 9 | Streamlit UI | Not started |
 | 10 | Testing, Sample Data, README | Not started |
 
-**Current phase:** 8
+**Current phase:** 9
 
 ---
 
