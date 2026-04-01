@@ -208,16 +208,17 @@ Set up everything before any agent logic is written. This phase is about structu
 
 ## Phase 9 — Streamlit UI
 **Target:** Week 4
+**Status: DONE**
 
 ### Tasks
-- [ ] Write `app.py` as the Streamlit entry point with page routing
-- [ ] Write `ui/pages/home.py` — file uploaders for bank and ledger CSV, period selector, run button
-- [ ] Write `ui/pages/progress.py` — live agent progress tracker, one status line per agent
-- [ ] Write `ui/pages/results.py` — match summary stats, exception count, match rate chart
-- [ ] Write `ui/pages/exceptions.py` — table of exceptions with investigation notes, severity badge
-- [ ] Write `ui/pages/report.py` — download button for Excel report, display narrative summary
-- [ ] Write `ui/pages/history.py` — table of past sessions from SQLite, click to drill into results
-- [ ] Connect all pages to the same LangGraph pipeline via `st.session_state`
+- [x] Write `app.py` as the Streamlit entry point with page routing
+- [x] Write `ui/pages/home.py` — file uploaders for bank and ledger CSV, period selector, run button
+- [x] Write `ui/pages/progress.py` — live agent progress tracker, one status line per agent
+- [x] Write `ui/pages/results.py` — match summary stats, exception count, match rate chart
+- [x] Write `ui/pages/exceptions.py` — table of exceptions with investigation notes, severity badge
+- [x] Write `ui/pages/report.py` — download button for Excel report, display narrative summary
+- [x] Write `ui/pages/history.py` — table of past sessions from SQLite, click to drill into results
+- [x] Connect all pages to the same pipeline via `st.session_state`
 
 ### Done when
 - Full Streamlit flow works from file upload to report download

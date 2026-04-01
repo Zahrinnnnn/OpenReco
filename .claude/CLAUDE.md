@@ -12,10 +12,10 @@
 | 6 | Agent 5: Report Writer | Done |
 | 7 | LangGraph Pipeline Wiring | Done |
 | 8 | Telegram Bot Interface | Done |
-| 9 | Streamlit UI | Not started |
+| 9 | Streamlit UI | Done |
 | 10 | Testing, Sample Data, README | Not started |
 
-**Current phase:** 9
+**Current phase:** 10
 
 ---
 
