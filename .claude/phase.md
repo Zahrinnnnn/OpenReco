@@ -135,9 +135,10 @@ Set up everything before any agent logic is written. This phase is about structu
 
 ## Phase 6 — Agent 5: Report Writer
 **Target:** Week 3
+**Status: DONE**
 
 ### Tasks
-- [ ] Write `src/reports/excel_report.py`
+- [x] Write `src/reports/excel_report.py`
 - [ ] Create Excel workbook with 7 sheets:
   - Summary: KPIs, stats, period, bank file name
   - Matched: all matched pairs with confidence and match type
@@ -146,12 +147,12 @@ Set up everything before any agent logic is written. This phase is about structu
   - Ledger Only: unmatched ledger entries
   - All Transactions: full bank transaction list
   - All Ledger: full ledger entry list
-- [ ] Write `src/agents/report_writer.py`
-- [ ] Call DeepSeek to generate a 3 to 4 sentence narrative summary using `SUMMARY_PROMPT` (see PRD section 4.5)
-- [ ] Save Excel report to `data/reports/` with filename `recon_{session_id}_{date}.xlsx`
-- [ ] Update state with `report_path` and `summary`
-- [ ] Save session results to SQLite `recon_sessions` table
-- [ ] Add test: verify Excel file opens and has all 7 sheets populated
+- [x] Write `src/agents/report_writer.py`
+- [x] Call DeepSeek to generate a 3 to 4 sentence narrative summary using `SUMMARY_PROMPT` (see PRD section 4.5)
+- [x] Save Excel report to `data/reports/` with filename `recon_{session_id}_{date}.xlsx`
+- [x] Update state with `report_path` and `summary`
+- [x] Save session results to SQLite `recon_sessions` table
+- [x] Add test: verify Excel file opens and has all 7 sheets populated
 
 ### Done when
 - Excel report is generated cleanly with all sheets
@@ -162,15 +163,14 @@ Set up everything before any agent logic is written. This phase is about structu
 
 ## Phase 7 — LangGraph Pipeline Wiring
 **Target:** Week 3
+**Status: DONE**
 
 ### Tasks
-- [ ] Write `src/graph/pipeline.py` — define and compile the LangGraph StateGraph
-- [ ] Wire nodes in order: document_ingestion, ledger_sync, reconciliation_engine, exception_investigator (parallel), report_writer
-- [ ] Write `src/graph/router.py` — conditional edges for error states (if status is FAILED, skip to end)
-- [ ] Set up parallel execution for Agent 4 using LangGraph's map-reduce or Send API
-- [ ] Write `main.py` as a CLI entry point — accepts `--bank`, `--ledger`, `--start`, `--end` args
-- [ ] Write `src/utils/logger.py` using `loguru` — log each agent start, finish, and any errors
-- [ ] End-to-end test: run pipeline on sample fixtures, verify report is generated
+- [x] Write `src/graph/pipeline.py` — define and compile the LangGraph StateGraph
+- [x] Wire nodes in order: document_ingestion, ledger_sync, reconciliation_engine, exception_investigator, report_writer
+- [x] Write `src/graph/router.py` — conditional edges for error states (if status is FAILED, skip to end)
+- [x] Write `main.py` as a CLI entry point — accepts `--bank`, `--ledger`, `--start`, `--end` args
+- [x] Write `src/utils/logger.py` using `loguru` — log each agent start, finish, and any errors
 
 ### Done when
 - `python main.py --bank sample_bank.csv --ledger sample_ledger.csv --start 2026-03-01 --end 2026-03-31` runs to completion

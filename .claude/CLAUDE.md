@@ -9,13 +9,13 @@
 | 3 | Agent 2: Ledger Sync | Done |
 | 4 | Agent 3: Reconciliation Engine | Done |
 | 5 | Agent 4: Exception Investigator | Done |
-| 6 | Agent 5: Report Writer | Not started |
-| 7 | LangGraph Pipeline Wiring | Not started |
+| 6 | Agent 5: Report Writer | Done |
+| 7 | LangGraph Pipeline Wiring | Done |
 | 8 | Telegram Bot Interface | Not started |
 | 9 | Streamlit UI | Not started |
 | 10 | Testing, Sample Data, README | Not started |
 
-**Current phase:** 6
+**Current phase:** 8
 
 ---
 

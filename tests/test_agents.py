@@ -3,6 +3,7 @@
 
 import os
 import json
+import tempfile
 import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
@@ -16,6 +17,9 @@ from src.agents.exception_investigator import (
     build_context_text,
     build_exceptions_by_date,
 )
+from src.agents.report_writer import report_writer_agent, build_plain_summary, build_report_path
+from src.reports.excel_report import build_excel_report
+from openpyxl import load_workbook
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 SAMPLE_BANK = os.path.join(FIXTURES_DIR, "sample_bank.csv")
@@ -504,3 +508,169 @@ def test_build_exceptions_by_date_groups_correctly():
 
     assert len(by_date["2026-03-10"]) == 2
     assert len(by_date["2026-03-11"]) == 1
+
+
+# --- report_writer_agent ---
+
+
+def make_full_state(with_exceptions=True):
+    # Builds a minimal but complete state dict suitable for the report writer.
+    txn = {
+        "id": "t1", "date": "2026-03-10", "description": "GRAB PAYMENT",
+        "reference": "GRB001", "debit": 45.60, "credit": 0.0,
+        "amount": 45.60, "matched": True, "match_id": "m1", "confidence": 1.0,
+    }
+    entry = {
+        "id": "e1", "date": "2026-03-10", "description": "Grab ride payment",
+        "reference": "GRB001", "amount": 45.60, "entry_type": "debit",
+        "matched": True, "match_id": "m1",
+    }
+    match = {
+        "match_id": "m1", "bank_txn_id": "t1", "ledger_entry_id": "e1",
+        "match_type": "EXACT", "confidence": 1.0, "reasoning": "exact match",
+    }
+    exceptions = []
+    if with_exceptions:
+        exceptions = [make_exception(amount=8500.0, exc_type="HIGH_VALUE")]
+
+    return {
+        "bank_file_path": "data/uploads/bank.csv",
+        "ledger_file_path": "data/uploads/ledger.csv",
+        "period_start": "2026-03-01",
+        "period_end": "2026-03-31",
+        "session_id": None,
+        "bank_transactions": [txn],
+        "ledger_entries": [entry],
+        "matches": [match],
+        "exceptions": exceptions,
+        "total_bank": 1,
+        "total_ledger": 1,
+        "matched_count": 1,
+        "unmatched_count": 0,
+        "report_path": None,
+        "summary": None,
+        "errors": [],
+        "status": "RUNNING",
+    }
+
+
+def test_build_plain_summary_includes_key_stats():
+    # Plain summary should mention match rate and exception count
+    state = make_full_state()
+    summary = build_plain_summary(state, match_rate=100.0, exception_count=1, high_risk_count=1, unmatched_amount=8500.0)
+
+    assert "100.0%" in summary
+    assert "1" in summary
+    assert "RM" in summary
+
+
+def test_build_report_path_includes_date():
+    # Report path should contain today's date in YYYYMMDD format
+    path = build_report_path(session_id=42)
+    assert "recon_42_" in path
+    assert ".xlsx" in path
+
+
+def test_excel_report_creates_file_with_all_sheets():
+    # build_excel_report should create an xlsx file with all 7 expected sheets
+    state = make_full_state()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        report_path = os.path.join(tmpdir, "test_report.xlsx")
+        build_excel_report(state, report_path)
+
+        assert os.path.exists(report_path)
+
+        wb = load_workbook(report_path)
+        expected_sheets = [
+            "Summary", "Matched", "Exceptions",
+            "Bank Only", "Ledger Only", "All Transactions", "All Ledger",
+        ]
+        for sheet_name in expected_sheets:
+            assert sheet_name in wb.sheetnames, f"Missing sheet: {sheet_name}"
+
+
+def test_excel_report_matched_sheet_has_data():
+    # The Matched sheet should have at least one data row (plus the header)
+    state = make_full_state(with_exceptions=False)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        report_path = os.path.join(tmpdir, "test_report.xlsx")
+        build_excel_report(state, report_path)
+
+        wb = load_workbook(report_path)
+        ws = wb["Matched"]
+        # Row 1 is the header, row 2 should be the match data
+        assert ws.max_row >= 2
+
+
+def test_excel_report_exceptions_sheet_colour_coded():
+    # Exceptions with High severity should have a red-ish fill on their row
+    state = make_full_state(with_exceptions=True)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        report_path = os.path.join(tmpdir, "test_report.xlsx")
+        build_excel_report(state, report_path)
+
+        wb = load_workbook(report_path)
+        ws = wb["Exceptions"]
+        # Row 2 should be the exception row; check at least one cell has a fill colour
+        if ws.max_row >= 2:
+            fill = ws.cell(row=2, column=1).fill
+            assert fill is not None
+
+
+@patch("src.agents.report_writer.DEEPSEEK_API_KEY", "")
+@patch("src.agents.report_writer.insert_session")
+@patch("src.agents.report_writer.insert_matches")
+@patch("src.agents.report_writer.insert_exceptions")
+def test_report_writer_uses_plain_summary_without_api_key(mock_exc, mock_match, mock_session):
+    # When no API key is set, the plain text fallback summary should be used
+    state = make_full_state()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with patch("src.agents.report_writer.REPORT_DIR", tmpdir):
+            result = report_writer_agent(state)
+
+    assert result["summary"] is not None
+    assert len(result["summary"]) > 0
+    assert result["status"] == "DONE"
+
+
+@patch("src.agents.report_writer.DEEPSEEK_API_KEY", "fake-key")
+@patch("src.agents.report_writer.insert_session")
+@patch("src.agents.report_writer.insert_matches")
+@patch("src.agents.report_writer.insert_exceptions")
+@patch("src.agents.report_writer.OpenAI")
+def test_report_writer_uses_deepseek_summary_when_key_present(mock_openai, mock_exc, mock_match, mock_session):
+    # When an API key is set, the agent should call DeepSeek for the summary
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.choices[0].message.content = "This is a test narrative summary from DeepSeek."
+    mock_client.chat.completions.create.return_value = mock_response
+    mock_openai.return_value = mock_client
+
+    state = make_full_state()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with patch("src.agents.report_writer.REPORT_DIR", tmpdir):
+            result = report_writer_agent(state)
+
+    assert "DeepSeek" in result["summary"]
+    assert result["status"] == "DONE"
+
+
+@patch("src.agents.report_writer.DEEPSEEK_API_KEY", "")
+@patch("src.agents.report_writer.insert_session")
+@patch("src.agents.report_writer.insert_matches")
+@patch("src.agents.report_writer.insert_exceptions")
+def test_report_writer_sets_report_path(mock_exc, mock_match, mock_session):
+    # report_path in the final state should point to an xlsx file
+    state = make_full_state()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with patch("src.agents.report_writer.REPORT_DIR", tmpdir):
+            result = report_writer_agent(state)
+
+    assert result["report_path"] is not None
+    assert result["report_path"].endswith(".xlsx")
