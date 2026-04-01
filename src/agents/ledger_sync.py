@@ -15,10 +15,8 @@ from src.utils.validators import check_fields_present, check_file_path
 
 load_dotenv()
 
-deepseek_client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
 
 # Expected columns in a standard ledger CSV
@@ -150,6 +148,10 @@ def detect_ledger_columns(df):
 
 def ask_deepseek_for_column_map(df):
     # Sends the first 5 rows to DeepSeek and asks it to map columns to ledger roles.
+    # Falls back to an empty dict if no API key is set or the call fails.
+    if not DEEPSEEK_API_KEY:
+        return {}
+
     preview = df.head(5).to_csv(index=False)
     columns = df.columns.tolist()
 
@@ -179,7 +181,8 @@ Only use column names from this list: {columns}
 """
 
     try:
-        response = deepseek_client.chat.completions.create(
+        client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+        response = client.chat.completions.create(
             model=DEEPSEEK_MODEL,
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"},

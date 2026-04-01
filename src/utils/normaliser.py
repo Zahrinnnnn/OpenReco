@@ -30,6 +30,8 @@ def clean_amount(value):
 def parse_date(value):
     # Tries to parse a date string into YYYY-MM-DD format.
     # Returns None if the value cannot be parsed.
+    # ISO format (YYYY-MM-DD) is tried first so that dateutil's dayfirst flag
+    # does not accidentally reorder the parts.
     if value is None:
         return None
 
@@ -38,6 +40,15 @@ def parse_date(value):
     if text == "" or text.lower() in ("nan", "none", "null"):
         return None
 
+    # Try strict ISO format first to avoid dayfirst ambiguity on YYYY-MM-DD strings
+    try:
+        from datetime import datetime
+        parsed = datetime.strptime(text[:10], "%Y-%m-%d")
+        return parsed.strftime("%Y-%m-%d")
+    except ValueError:
+        pass
+
+    # Fall back to dateutil for other formats (DD/MM/YYYY, "01 Mar 2026", etc.)
     try:
         parsed = dateutil_parser.parse(text, dayfirst=True)
         return parsed.strftime("%Y-%m-%d")
