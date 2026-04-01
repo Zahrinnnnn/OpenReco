@@ -37,16 +37,11 @@ OpenReco automates the full reconciliation loop:
 
 ## Why Multi-Agent / LangGraph
 
-Yes, you could write this as a single 300-line Python script with pandas and rapidfuzz. And for a one-off reconciliation, you should.
+OpenReco is built as a pipeline rather than a single script for three reasons.
 
-OpenReco is built the way it is because:
-
-- **It is a module, not a script.** It will be embedded into a larger product. The agent/node interface means each piece can be swapped, upgraded, or parallelised independently without touching the rest.
-- **The LLM parts are real.** DeepSeek doing exception investigation and narrative writing is not decorative. It replaces hours of manual finance analyst work per run.
-- **The state machine matters for UIs.** The Telegram bot and Streamlit app both need to know *which stage* the pipeline is at to show progress. A single script can't expose that naturally. LangGraph's node-by-node execution can.
-- **Future parallelism.** Agent 4 is already structured to investigate exceptions concurrently. That matters when a reconciliation has 50+ exceptions.
-
-Deliberately overengineered for a portfolio project? Yes. Deliberately designed for a real integration? Also yes.
+- **Modularity.** Each agent has a single responsibility and a defined interface. Swapping the matching logic, changing the LLM provider, or adding a new output format does not require touching other parts of the system.
+- **State visibility.** The Telegram bot and Streamlit UI both surface per-agent progress to the user. LangGraph's node-by-node execution makes that straightforward to implement cleanly.
+- **Future integration.** OpenReco is designed to be embedded into a larger product. The pipeline, state schema, and agent interfaces are built to be pluggable from day one.
 
 ---
 
