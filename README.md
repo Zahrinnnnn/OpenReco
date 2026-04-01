@@ -1,6 +1,6 @@
 # OpenReco
 
-> **Ongoing project.** OpenReco is being built as a standalone reconciliation module that will be integrated into a larger internal finance product. The architecture is intentionally designed to be pluggable — the LangGraph pipeline, agent interfaces, and state schema are all built with that future integration in mind.
+> **Ongoing project.** OpenReco is being built as a standalone reconciliation module that will be integrated into a larger internal finance product. The architecture is intentionally designed to be pluggable: the LangGraph pipeline, agent interfaces, and state schema are all built with that future integration in mind.
 
 ---
 
@@ -16,10 +16,10 @@ Every month, a finance team has to:
 - Write up a report explaining what was found
 
 The pain points are real:
-- **Column names are never consistent.** One bank exports `Txn Date`, another exports `Value Date`, another exports `Date`. Same for amounts — `Debit/Credit`, `Amount`, `Dr/Cr`.
+- **Column names are never consistent.** One bank exports `Txn Date`, another exports `Value Date`, another exports `Date`. Same for amounts: `Debit/Credit`, `Amount`, `Dr/Cr`.
 - **Dates slip.** A payment posted on March 31 might appear in the ledger on April 1. Exact matching fails.
 - **Descriptions don't match.** The bank says `GRAB *PAYMENT MAR26`. The ledger says `Grab ride payment`. These are the same thing.
-- **Exceptions pile up.** When something doesn't match, someone has to reason about why — is it a timing issue, a duplicate, a missing entry, or something that needs urgent attention?
+- **Exceptions pile up.** When something doesn't match, someone has to reason about why: is it a timing issue, a duplicate, a missing entry, or something that needs urgent attention?
 - **The report takes hours.** Compiling the findings into something a manager can read takes longer than the matching itself.
 
 ---
@@ -28,21 +28,21 @@ The pain points are real:
 
 OpenReco automates the full reconciliation loop:
 
-1. **Auto-detect columns** — no manual mapping needed. If the headers are ambiguous, DeepSeek infers them from the first 5 rows.
-2. **5-tier matching** — goes from strict exact match down to fuzzy description matching, so timing differences and description variations don't cause false misses.
-3. **AI-powered exception investigation** — DeepSeek reasons about each unmatched item, suggests what to check, and rates the risk level.
-4. **One-click report** — a 7-sheet Excel report and a plain-language management summary, generated automatically.
+1. **Auto-detect columns.** No manual mapping needed. If the headers are ambiguous, DeepSeek infers them from the first 5 rows.
+2. **5-tier matching.** Goes from strict exact match down to fuzzy description matching, so timing differences and description variations don't cause false misses.
+3. **AI-powered exception investigation.** DeepSeek reasons about each unmatched item, suggests what to check, and rates the risk level.
+4. **One-click report.** A 7-sheet Excel report and a plain-language management summary, generated automatically.
 
 ---
 
 ## Why Multi-Agent / LangGraph
 
-Yes — you could write this as a single 300-line Python script with pandas and rapidfuzz. And for a one-off reconciliation, you should.
+Yes, you could write this as a single 300-line Python script with pandas and rapidfuzz. And for a one-off reconciliation, you should.
 
 OpenReco is built the way it is because:
 
 - **It is a module, not a script.** It will be embedded into a larger product. The agent/node interface means each piece can be swapped, upgraded, or parallelised independently without touching the rest.
-- **The LLM parts are real.** DeepSeek doing exception investigation and narrative writing is not decorative — it replaces hours of manual finance analyst work per run.
+- **The LLM parts are real.** DeepSeek doing exception investigation and narrative writing is not decorative. It replaces hours of manual finance analyst work per run.
 - **The state machine matters for UIs.** The Telegram bot and Streamlit app both need to know *which stage* the pipeline is at to show progress. A single script can't expose that naturally. LangGraph's node-by-node execution can.
 - **Future parallelism.** Agent 4 is already structured to investigate exceptions concurrently. That matters when a reconciliation has 50+ exceptions.
 
@@ -177,7 +177,7 @@ Unmatched:   RM 8,750.00
 Report:      data/reports/recon_20260401.xlsx
 ```
 
-Excel report — all 7 sheets populated:
+Excel report, all 7 sheets populated:
 
 | Sheet | Rows |
 |---|---|
@@ -212,10 +212,10 @@ Sample files in `tests/fixtures/` show typical Malaysian bank statement and ledg
 
 | Variable | Default | Description |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | — | Exception investigation + narrative summary |
+| `DEEPSEEK_API_KEY` | required | Exception investigation + narrative summary |
 | `DEEPSEEK_BASE_URL` | `https://api.deepseek.com` | API endpoint |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | Model name |
-| `TELEGRAM_BOT_TOKEN` | — | Telegram bot only |
+| `TELEGRAM_BOT_TOKEN` | optional | Telegram bot only |
 | `DB_PATH` | `data/database.db` | SQLite file |
 | `UPLOAD_DIR` | `data/uploads` | Uploaded CSV storage |
 | `REPORT_DIR` | `data/reports` | Excel report output |
@@ -281,4 +281,4 @@ OpenReco/
 
 ## Cost
 
-Each full run costs under USD 0.05 on DeepSeek pricing — roughly USD 0.001 per exception investigation and USD 0.002 for the narrative summary.
+Each full run costs under USD 0.05 on DeepSeek pricing: roughly USD 0.001 per exception investigation and USD 0.002 for the narrative summary.
