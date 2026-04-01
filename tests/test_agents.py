@@ -2,11 +2,20 @@
 # Run with: pytest tests/test_agents.py
 
 import os
+import json
 import pytest
 import pandas as pd
+from unittest.mock import patch, MagicMock
 
 from src.agents.document_ingestion import document_ingestion_agent, detect_columns, build_transactions
 from src.agents.ledger_sync import ledger_sync_agent, detect_ledger_columns, build_ledger_entries
+from src.agents.exception_investigator import (
+    exception_investigator_agent,
+    investigate_one_exception,
+    enrich_exception,
+    build_context_text,
+    build_exceptions_by_date,
+)
 
 FIXTURES_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
 SAMPLE_BANK = os.path.join(FIXTURES_DIR, "sample_bank.csv")
@@ -319,3 +328,179 @@ def test_ledger_skips_rows_with_bad_dates():
     dates = [e["date"] for e in entries]
     assert "2026-03-01" in dates
     assert "2026-03-03" in dates
+
+
+# --- exception_investigator_agent ---
+
+
+def make_exception(exception_id="ex1", exc_type="BANK_ONLY", amount=45.60, date="2026-03-10", description="GRAB PAYMENT"):
+    return {
+        "exception_id": exception_id,
+        "type": exc_type,
+        "item_id": "t1",
+        "item_source": "bank",
+        "amount": amount,
+        "date": date,
+        "description": description,
+        "reference": "GRB001",
+        "investigation": None,
+        "resolution": None,
+        "severity": "Low",
+    }
+
+
+def make_deepseek_response(likely_reason="Timing difference", action="Check posting date", risk="Medium", suggested=None):
+    # Builds a fake DeepSeek API response object that looks like the real one.
+    message = MagicMock()
+    message.content = json.dumps({
+        "likely_reason": likely_reason,
+        "recommended_action": action,
+        "risk_level": risk,
+        "suggested_match": suggested,
+    })
+    choice = MagicMock()
+    choice.message = message
+    response = MagicMock()
+    response.choices = [choice]
+    return response
+
+
+def test_agent_skips_when_no_exceptions():
+    # If there are no exceptions, agent should return state unchanged
+    state = {
+        "exceptions": [],
+        "errors": [],
+        "status": "RUNNING",
+    }
+    result = exception_investigator_agent(state)
+    assert result["exceptions"] == []
+
+
+def test_agent_skips_when_no_api_key():
+    # If DEEPSEEK_API_KEY is not set, agent should return state unchanged
+    exception = make_exception()
+    state = {
+        "exceptions": [exception],
+        "errors": [],
+        "status": "RUNNING",
+    }
+    with patch.dict(os.environ, {"DEEPSEEK_API_KEY": ""}):
+        result = exception_investigator_agent(state)
+
+    # investigation should still be None because no API call was made
+    assert result["exceptions"][0]["investigation"] is None
+
+
+@patch("src.agents.exception_investigator.DEEPSEEK_API_KEY", "fake-key")
+@patch("src.agents.exception_investigator.build_deepseek_client")
+def test_agent_enriches_exceptions(mock_build_client):
+    # With a mocked DeepSeek response, investigation and resolution should be populated
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.return_value = make_deepseek_response(
+        likely_reason="Bank posted the payment one day late",
+        action="Verify posting date with bank statement page 3",
+        risk="Medium",
+    )
+    mock_build_client.return_value = mock_client
+
+    exception = make_exception()
+    state = {
+        "exceptions": [exception],
+        "errors": [],
+        "status": "RUNNING",
+    }
+    result = exception_investigator_agent(state)
+
+    enriched = result["exceptions"][0]
+    assert enriched["investigation"] == "Bank posted the payment one day late"
+    assert enriched["resolution"] == "Verify posting date with bank statement page 3"
+    assert enriched["severity"] == "Medium"
+
+
+@patch("src.agents.exception_investigator.DEEPSEEK_API_KEY", "fake-key")
+@patch("src.agents.exception_investigator.build_deepseek_client")
+def test_agent_continues_after_failed_call(mock_build_client):
+    # If one DeepSeek call throws an exception, the exception should be returned unchanged
+    # and the agent should not crash
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = RuntimeError("API timeout")
+    mock_build_client.return_value = mock_client
+
+    exception = make_exception()
+    state = {
+        "exceptions": [exception],
+        "errors": [],
+        "status": "RUNNING",
+    }
+    result = exception_investigator_agent(state)
+
+    # The exception is still there, just not enriched
+    assert len(result["exceptions"]) == 1
+    assert result["exceptions"][0]["investigation"] is None
+
+
+def test_enrich_exception_sets_all_fields():
+    # enrich_exception should populate investigation, resolution, and severity correctly
+    exception = make_exception()
+    deepseek_result = {
+        "likely_reason": "Timing difference",
+        "recommended_action": "Check the next business day",
+        "risk_level": "High",
+        "suggested_match": "txn_abc123",
+    }
+    enriched = enrich_exception(exception, deepseek_result)
+
+    assert enriched["investigation"] == "Timing difference"
+    assert enriched["resolution"] == "Check the next business day"
+    assert enriched["severity"] == "High"
+    assert enriched["suggested_match"] == "txn_abc123"
+
+
+def test_enrich_exception_ignores_unknown_risk_level():
+    # If DeepSeek returns an unexpected risk level, severity should not be changed
+    exception = make_exception()
+    exception["severity"] = "Low"
+
+    deepseek_result = {
+        "likely_reason": "Unknown",
+        "recommended_action": "Review manually",
+        "risk_level": "Critical",  # not a valid value
+        "suggested_match": None,
+    }
+    enriched = enrich_exception(exception, deepseek_result)
+
+    # Severity should remain unchanged since "Critical" is not in RISK_TO_SEVERITY
+    assert enriched["severity"] == "Low"
+
+
+def test_build_context_text_excludes_self():
+    # The context for an exception should not include that same exception
+    ex1 = make_exception(exception_id="ex1", date="2026-03-10")
+    ex2 = make_exception(exception_id="ex2", date="2026-03-10", description="TNB ELECTRICITY")
+
+    by_date = build_exceptions_by_date([ex1, ex2])
+    context = build_context_text(ex1, by_date)
+
+    assert "TNB ELECTRICITY" in context
+    assert "GRAB PAYMENT" not in context  # ex1 should not reference itself
+
+
+def test_build_context_text_returns_none_when_no_others():
+    # If no other exceptions share the same date, context should be "None"
+    ex1 = make_exception(exception_id="ex1", date="2026-03-10")
+    by_date = build_exceptions_by_date([ex1])
+    context = build_context_text(ex1, by_date)
+
+    assert context == "None"
+
+
+def test_build_exceptions_by_date_groups_correctly():
+    # Exceptions on the same date should be grouped together
+    ex1 = make_exception(exception_id="ex1", date="2026-03-10")
+    ex2 = make_exception(exception_id="ex2", date="2026-03-10")
+    ex3 = make_exception(exception_id="ex3", date="2026-03-11")
+
+    by_date = build_exceptions_by_date([ex1, ex2, ex3])
+
+    assert len(by_date["2026-03-10"]) == 2
+    assert len(by_date["2026-03-11"]) == 1
