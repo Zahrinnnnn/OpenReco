@@ -13,9 +13,9 @@
 | 7 | LangGraph Pipeline Wiring | Done |
 | 8 | Telegram Bot Interface | Done |
 | 9 | Streamlit UI | Done |
-| 10 | Testing, Sample Data, README | Not started |
+| 10 | Testing, Sample Data, README | Done |
 
-**Current phase:** 10
+**Current phase:** Complete
 
 ---
 

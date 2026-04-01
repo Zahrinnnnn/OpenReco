@@ -32,3 +32,20 @@ Date,Description,Reference,Amount,Type,Account Code,Counterparty
 2026-03-29,Touch n Go reload,TNG000009,50.00,debit,6070,Touch n Go
 2026-03-30,Grab ride payment,GRB000128,19.80,debit,6010,Grab
 2026-03-31,Month end accrual adjustment,,120.00,credit,4009,
+2026-03-04,Spotify monthly subscription,SPT000010,17.90,debit,6031,Spotify
+2026-03-06,YouTube Premium subscription,YTP000011,23.90,debit,6031,YouTube
+2026-03-09,Starbucks coffee Mid Valley,STB000012,28.50,debit,6040,Starbucks
+2026-03-12,Zalora fashion purchase,ZAL000013,199.00,debit,6050,Zalora
+2026-03-15,Poslaju courier service,PLJ000014,12.00,debit,6070,Poslaju
+2026-03-18,Maxis postpaid bill,MAX000015,108.00,debit,6031,Maxis
+2026-03-21,Parkson Mall department store,PRK000016,445.00,debit,6040,Parkson
+2026-03-23,Grab food delivery,GRF000017,35.80,debit,6040,Grab Food
+2026-03-26,Honda service and maintenance,HSC000018,650.00,debit,6090,Honda
+2026-03-28,Popular bookstore,POP000019,66.00,debit,6050,Popular
+2026-03-10,Shopee refund received,SPE000333R,50.00,credit,6050,Shopee
+2026-03-17,Astro satellite subscription,AST000020,99.90,debit,6031,Astro
+2026-03-25,Grab ride payment,GRB000121,15.00,debit,6010,Grab
+2026-03-20,Vendor payment March 2026,VND202603,3200.00,debit,6100,Vendor
+2026-03-15,Quarterly audit fee accrual,AUD202601,1500.00,debit,6110,Auditor
+2026-03-31,Depreciation charge March,,800.00,debit,6120,
+2026-03-28,Staff claims reimbursement,CLM000021,375.00,debit,6130,Staff

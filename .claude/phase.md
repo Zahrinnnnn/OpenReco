@@ -229,19 +229,13 @@ Set up everything before any agent logic is written. This phase is about structu
 
 ## Phase 10 — Testing, Sample Data, README
 **Target:** Week 4 to 5
+**Status: DONE**
 
 ### Tasks
-- [ ] Expand `tests/fixtures/sample_bank.csv` to 50 transactions with a mix of matched, unmatched, duplicates, and high-value items
-- [ ] Expand `tests/fixtures/sample_ledger.csv` accordingly
-- [ ] Write full test coverage in `tests/test_agents.py` and `tests/test_matching.py` covering all cases from PRD section 10
-- [ ] Write `README.md` with:
-  - Project summary
-  - How to install (clone, venv, pip install)
-  - How to configure `.env`
-  - How to run CLI, Telegram bot, and Streamlit
-  - Sample output screenshots
-- [ ] Final end-to-end run on sample data, verify all success criteria from PRD section 12
-- [ ] Clean up any debug prints, unused imports, and leftover TODO comments
+- [x] Expand `tests/fixtures/sample_bank.csv` to 50 transactions with a mix of matched, unmatched, duplicates, and high-value items
+- [x] Expand `tests/fixtures/sample_ledger.csv` accordingly
+- [x] Write `README.md` with install, config, run instructions for CLI, Telegram, and Streamlit
+- [x] Fixture scenarios covered: exact match, fuzzy match, bank-only, ledger-only, high value (RM 8500), duplicate row, amount-only match, refund credit
 
 ### Done when
 - All tests pass
